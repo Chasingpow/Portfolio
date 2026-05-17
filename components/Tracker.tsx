@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useSession, signIn, signOut } from "next-auth/react"
 import {
   Chart as ChartJS, ArcElement, Tooltip, Legend,
   CategoryScale, LinearScale, PointElement, LineElement, Filler
@@ -154,6 +155,9 @@ const JUNIOR_TAX_TIPS: Record<Region, string[]> = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function Tracker() {
+  const { data: session, status } = useSession()
+  const discordId = (session?.user as any)?.discordId as string | undefined
+
   const [data,      setData]      = useState<PortfoliosData | null>(null)
   const [mode,      setMode]      = useState<Mode>("junior")
   const [region,    setRegion]    = useState<Region>("US")
@@ -177,6 +181,9 @@ export default function Tracker() {
   const [returnPct,   setReturnPct]   = useState(9)
   const [targetGoal,  setTargetGoal]  = useState(1000000)
 
+  // Live prices: ticker -> { price, change }
+  const [prices, setPrices] = useState<Record<string, { price: number; change: number }>>({})
+
   useEffect(() => {
     fetch("/api/portfolios").then(r => r.json()).then((d: PortfoliosData) => {
       setData(d)
@@ -195,6 +202,64 @@ export default function Tracker() {
       setReturnPct(p.return_pct)
     }
   }, [region, portType, data])
+
+  // Load saved user data from Supabase when signed in
+  useEffect(() => {
+    if (!discordId || !data) return
+    fetch("/api/user/data").then(r => r.json()).then(saved => {
+      if (!saved.holdings) return
+      const ch: Record<string, Holding[]> = {}
+      for (const row of saved.holdings) ch[`${row.region}-${row.port_type}`] = row.holdings
+      if (Object.keys(ch).length) setCustomHoldings(ch)
+
+      const wc: Record<string, Wildcard[]> = {}
+      for (const row of saved.wildcards) wc[`${row.region}-${row.port_type}`] = row.wildcards
+      if (Object.keys(wc).length) setWildcards(wc)
+
+      for (const row of saved.projections) {
+        // apply whichever was last saved
+        if (row.region === region && row.port_type === portType) {
+          setStartBal(row.start_bal)
+          setAnnualDep(row.annual_dep)
+          setYears(row.years)
+          setReturnPct(row.return_pct)
+          setTargetGoal(row.target_goal)
+        }
+      }
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [discordId, data])
+
+  // Fetch live prices whenever the portfolio view changes
+  useEffect(() => {
+    if (!data) return
+    const port = data[region][portType]
+    const tickers = port.base_holdings.map(h => h.t)
+    fetch("/api/prices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tickers, region }),
+    }).then(r => r.json()).then(setPrices)
+  }, [data, region, portType])
+
+  // Auto-save user data 2s after any change (debounced)
+  useEffect(() => {
+    if (!discordId || !data) return
+    const timer = setTimeout(() => {
+      fetch("/api/user/data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          region, port_type: portType,
+          holdings: customHoldings[`${region}-${portType}`] ?? null,
+          wildcards: wildcards[`${region}-${portType}`] ?? null,
+          projection: { start_bal: startBal, annual_dep: annualDep, years, return_pct: returnPct, target_goal: targetGoal },
+        }),
+      })
+    }, 2000)
+    return () => clearTimeout(timer)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [discordId, region, portType, customHoldings, wildcards, startBal, annualDep, years, returnPct, targetGoal])
 
   // All useMemo hooks must be declared before any early returns (Rules of Hooks)
   const wcKey = `${region}-${portType}`
@@ -357,22 +422,44 @@ export default function Tracker() {
             <div style={{ color: "var(--sub)", fontSize: 13 }}>Portfolio tracker · educational only · not investment advice</div>
           </div>
 
-          {/* Mode toggle */}
-          <div style={{ display: "flex", gap: 4, background: "var(--card-alt)", borderRadius: 10, padding: 4, border: "1px solid var(--divider)" }}>
-            <button onClick={() => setMode("junior")} style={{
-              padding: "10px 22px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, transition: "all 0.2s",
-              background: isJunior ? "#6ECB81" : "transparent",
-              color:      isJunior ? "#1e1f22" : "var(--sub)",
-            }}>
-              Junior Portfolio
-            </button>
-            <button onClick={() => setMode("adult")} style={{
-              padding: "10px 22px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, transition: "all 0.2s",
-              background: !isJunior ? "var(--accent)" : "transparent",
-              color:      !isJunior ? "#ffffff"       : "var(--sub)",
-            }}>
-              Adult Portfolio
-            </button>
+          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            {/* Mode toggle */}
+            <div style={{ display: "flex", gap: 4, background: "var(--card-alt)", borderRadius: 10, padding: 4, border: "1px solid var(--divider)" }}>
+              <button onClick={() => setMode("junior")} style={{
+                padding: "10px 22px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, transition: "all 0.2s",
+                background: isJunior ? "#6ECB81" : "transparent",
+                color:      isJunior ? "#1e1f22" : "var(--sub)",
+              }}>Junior Portfolio</button>
+              <button onClick={() => setMode("adult")} style={{
+                padding: "10px 22px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, transition: "all 0.2s",
+                background: !isJunior ? "var(--accent)" : "transparent",
+                color:      !isJunior ? "#ffffff"       : "var(--sub)",
+              }}>Adult Portfolio</button>
+            </div>
+
+            {/* Auth button */}
+            {status === "loading" ? null : session ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {session.user?.image && (
+                  <img src={session.user.image} alt="avatar" style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid var(--accent)" }} />
+                )}
+                <div>
+                  <div style={{ color: "var(--text)", fontSize: 13, fontWeight: 600 }}>{session.user?.name}</div>
+                  <div style={{ color: "var(--green)", fontSize: 11 }}>✓ Portfolio saved</div>
+                </div>
+                <button onClick={() => signOut()} style={{ fontSize: 12, padding: "6px 12px", borderRadius: 6, border: "1px solid var(--divider)", background: "transparent", color: "var(--muted)", cursor: "pointer" }}>
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => signIn("discord")} style={{
+                display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 8,
+                border: "none", background: "#5865F2", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer"
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+                Sign in with Discord
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -461,6 +548,8 @@ export default function Tracker() {
                   <th style={{ textAlign: "left", padding: "4px 0" }}>Ticker</th>
                   <th style={{ textAlign: "left", padding: "4px 0" }}>Name</th>
                   <th style={{ textAlign: "right", padding: "4px 0" }}>Alloc</th>
+                  <th style={{ textAlign: "right", padding: "4px 0" }}>Price</th>
+                  <th style={{ textAlign: "right", padding: "4px 0" }}>Day %</th>
                   {isIncome && <th style={{ textAlign: "right", padding: "4px 0" }}>Yield</th>}
                   {isIncome && <th style={{ textAlign: "right", padding: "4px 0" }}>Cadence</th>}
                   <th style={{ textAlign: "left", padding: "4px 8px" }}>Where</th>
@@ -491,6 +580,13 @@ export default function Tracker() {
                         ) : h.n}
                       </td>
                       <td style={{ padding: "6px 0", textAlign: "right", color: "var(--text)" }}>{h.p}%</td>
+                      <td style={{ padding: "6px 0", textAlign: "right", color: "var(--sub)", fontSize: 12 }}>
+                        {prices[h.t] ? `${port.symbol}${prices[h.t].price.toFixed(2)}` : "—"}
+                      </td>
+                      <td style={{ padding: "6px 0", textAlign: "right", fontSize: 12, fontWeight: 600,
+                        color: prices[h.t] ? (prices[h.t].change >= 0 ? "var(--green)" : "var(--red)") : "var(--muted)" }}>
+                        {prices[h.t] ? `${prices[h.t].change >= 0 ? "+" : ""}${prices[h.t].change.toFixed(2)}%` : "—"}
+                      </td>
                       {isIncome && <td style={{ padding: "6px 0", textAlign: "right", color: "var(--green)" }}>{h.y}%</td>}
                       {isIncome && <td style={{ padding: "6px 0", textAlign: "right", color: "var(--muted)", fontSize: 11 }}>{h.cadence}</td>}
                       <td style={{ padding: "6px 8px", color: "var(--muted)", fontSize: 11, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.where}</td>
