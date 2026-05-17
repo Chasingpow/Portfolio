@@ -261,7 +261,10 @@ export default function Tracker() {
   const effectiveHoldings = useMemo(() => {
     if (!data) return []
     const p = data[region][portType]
-    return mode === "junior" ? p.base_holdings : (customHoldings[wcKey] ?? p.base_holdings)
+    if (mode === "adult") return customHoldings[wcKey] ?? p.base_holdings
+    // Junior: locked tickers/names but overlay any saved shares/avgCost
+    const saved = customHoldings[wcKey] ?? []
+    return p.base_holdings.map((h, i) => ({ ...h, shares: saved[i]?.shares, avgCost: saved[i]?.avgCost }))
   }, [data, region, portType, mode, customHoldings, wcKey])
 
   const score = useMemo(
@@ -498,7 +501,7 @@ export default function Tracker() {
             <span style={{ fontSize: 20 }}>🌱</span>
             <div>
               <div style={{ fontWeight: 700, color: "#6ECB81", fontSize: 14 }}>Junior Portfolio — Recommended Starting Point</div>
-              <div style={{ color: "var(--sub)", fontSize: 12 }}>These are the original, expert-curated holdings. Holdings are locked — switch to Adult Portfolio to track your real positions.</div>
+              <div style={{ color: "var(--sub)", fontSize: 12 }}>Expert-curated holdings — tickers are locked but you can enter your shares and average cost to track your real positions and gain/loss.</div>
             </div>
           </div>
         ) : (
@@ -535,8 +538,8 @@ export default function Tracker() {
 
         <h2 style={{ fontWeight: 700, fontSize: 20, marginBottom: 20, color: "var(--text)" }}>{port.name}</h2>
 
-        {/* ── Portfolio Value Summary (adult, when positions entered) ── */}
-        {!isJunior && hasAnyPositions && (
+        {/* ── Portfolio Value Summary ── */}
+        {hasAnyPositions && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16, marginBottom: 20 }}>
             <div style={{ background: "var(--card)", borderRadius: 10, padding: 18, textAlign: "center" }}>
               <div style={{ color: "var(--sub)", fontSize: 12, marginBottom: 4 }}>Total Market Value</div>
@@ -610,27 +613,19 @@ export default function Tracker() {
                   <tr style={{ color: "var(--muted)", borderBottom: "1px solid var(--divider)" }}>
                     <th style={{ textAlign: "left", padding: "4px 4px 4px 0" }}>Ticker</th>
                     <th style={{ textAlign: "left", padding: "4px 4px" }}>Name</th>
-                    {isJunior ? (
-                      <>
-                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Alloc</th>
-                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Price</th>
-                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Day%</th>
-                        {isIncome && <th style={{ textAlign: "right", padding: "4px 4px" }}>Yield</th>}
-                        {isIncome && <th style={{ textAlign: "right", padding: "4px 4px" }}>Cadence</th>}
-                        <th style={{ textAlign: "left", padding: "4px 4px" }}>Where</th>
-                      </>
-                    ) : (
-                      <>
-                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Shares</th>
-                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Avg Cost</th>
-                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Mkt Value</th>
-                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Gain/Loss</th>
-                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Price</th>
-                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Day%</th>
-                        {isIncome && <th style={{ textAlign: "right", padding: "4px 4px" }}>Yield</th>}
-                        <th style={{ padding: "4px 0" }} />
-                      </>
-                    )}
+                    <>
+                    {isJunior && <th style={{ textAlign: "right", padding: "4px 4px" }}>Alloc</th>}
+                    <th style={{ textAlign: "right", padding: "4px 4px" }}>Shares</th>
+                    <th style={{ textAlign: "right", padding: "4px 4px" }}>Avg Cost</th>
+                    <th style={{ textAlign: "right", padding: "4px 4px" }}>Mkt Value</th>
+                    <th style={{ textAlign: "right", padding: "4px 4px" }}>Gain/Loss</th>
+                    <th style={{ textAlign: "right", padding: "4px 4px" }}>Price</th>
+                    <th style={{ textAlign: "right", padding: "4px 4px" }}>Day%</th>
+                    {isIncome && <th style={{ textAlign: "right", padding: "4px 4px" }}>Yield</th>}
+                    {isIncome && isJunior && <th style={{ textAlign: "right", padding: "4px 4px" }}>Cadence</th>}
+                    {isJunior && <th style={{ textAlign: "left", padding: "4px 4px" }}>Where</th>}
+                    {!isJunior && <th style={{ padding: "4px 0" }} />}
+                  </>
                   </tr>
                 </thead>
                 <tbody>
@@ -663,77 +658,70 @@ export default function Tracker() {
                           ) : h.n}
                         </td>
 
-                        {isJunior ? (
-                          <>
-                            <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--text)" }}>{h.p}%</td>
-                            <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--sub)" }}>
-                              {lp ? `${port.symbol}${lp.toFixed(2)}` : "—"}
-                            </td>
-                            <td style={{ padding: "5px 4px", textAlign: "right", fontWeight: 600,
-                              color: prices[h.t] ? (prices[h.t].change >= 0 ? "var(--green)" : "var(--red)") : "var(--muted)" }}>
-                              {prices[h.t] ? `${prices[h.t].change >= 0 ? "+" : ""}${prices[h.t].change.toFixed(2)}%` : "—"}
-                            </td>
-                            {isIncome && <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--green)" }}>{h.y}%</td>}
-                            {isIncome && <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--muted)", fontSize: 11 }}>{h.cadence}</td>}
-                            <td style={{ padding: "5px 4px", color: "var(--muted)", fontSize: 11, maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.where}</td>
-                          </>
-                        ) : (
-                          <>
-                            {/* Shares — always editable */}
-                            <td style={{ padding: "5px 4px", textAlign: "right" }}>
-                              <input
-                                type="number" min={0} step="any"
-                                value={h.shares ?? ""}
-                                placeholder="0"
-                                onChange={e => updatePosition(i, "shares", e.target.value)}
-                                style={{ ...inputStyle, width: 64, textAlign: "right" }}
-                              />
-                            </td>
+                        <>
+                          {/* Alloc% — junior only */}
+                          {isJunior && <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--text)" }}>{h.p}%</td>}
 
-                            {/* Avg Cost — always editable */}
-                            <td style={{ padding: "5px 4px", textAlign: "right" }}>
-                              <input
-                                type="number" min={0} step="any"
-                                value={h.avgCost ?? ""}
-                                placeholder="0.00"
-                                onChange={e => updatePosition(i, "avgCost", e.target.value)}
-                                style={{ ...inputStyle, width: 72, textAlign: "right" }}
-                              />
-                            </td>
+                          {/* Shares — editable in both modes */}
+                          <td style={{ padding: "5px 4px", textAlign: "right" }}>
+                            <input
+                              type="number" min={0} step="any"
+                              value={h.shares ?? ""}
+                              placeholder="0"
+                              onChange={e => updatePosition(i, "shares", e.target.value)}
+                              style={{ ...inputStyle, width: 60, textAlign: "right" }}
+                            />
+                          </td>
 
-                            {/* Market Value */}
-                            <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--text)", fontWeight: 600 }}>
-                              {pd.marketValue !== null ? fmtDec(pd.marketValue, port.symbol) : "—"}
-                            </td>
+                          {/* Avg Cost — editable in both modes */}
+                          <td style={{ padding: "5px 4px", textAlign: "right" }}>
+                            <input
+                              type="number" min={0} step="any"
+                              value={h.avgCost ?? ""}
+                              placeholder="0.00"
+                              onChange={e => updatePosition(i, "avgCost", e.target.value)}
+                              style={{ ...inputStyle, width: 70, textAlign: "right" }}
+                            />
+                          </td>
 
-                            {/* Gain/Loss */}
-                            <td style={{ padding: "5px 4px", textAlign: "right" }}>
-                              {pd.gainLoss !== null ? (
-                                <span style={{ color: pd.gainLoss >= 0 ? "var(--green)" : "var(--red)", fontWeight: 600 }}>
-                                  {pd.gainLoss >= 0 ? "+" : ""}{fmtDec(pd.gainLoss, port.symbol)}
-                                  {pd.gainLossPct !== null && (
-                                    <span style={{ fontSize: 10, display: "block", fontWeight: 400 }}>
-                                      {pd.gainLossPct >= 0 ? "+" : ""}{pd.gainLossPct.toFixed(1)}%
-                                    </span>
-                                  )}
-                                </span>
-                              ) : "—"}
-                            </td>
+                          {/* Market Value */}
+                          <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--text)", fontWeight: 600 }}>
+                            {pd.marketValue !== null ? fmtDec(pd.marketValue, port.symbol) : "—"}
+                          </td>
 
-                            {/* Live Price */}
-                            <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--sub)" }}>
-                              {lp ? `${port.symbol}${lp.toFixed(2)}` : "—"}
-                            </td>
+                          {/* Gain/Loss */}
+                          <td style={{ padding: "5px 4px", textAlign: "right" }}>
+                            {pd.gainLoss !== null ? (
+                              <span style={{ color: pd.gainLoss >= 0 ? "var(--green)" : "var(--red)", fontWeight: 600 }}>
+                                {pd.gainLoss >= 0 ? "+" : ""}{fmtDec(pd.gainLoss, port.symbol)}
+                                {pd.gainLossPct !== null && (
+                                  <span style={{ fontSize: 10, display: "block", fontWeight: 400 }}>
+                                    {pd.gainLossPct >= 0 ? "+" : ""}{pd.gainLossPct.toFixed(1)}%
+                                  </span>
+                                )}
+                              </span>
+                            ) : "—"}
+                          </td>
 
-                            {/* Day % */}
-                            <td style={{ padding: "5px 4px", textAlign: "right", fontWeight: 600,
-                              color: prices[h.t] ? (prices[h.t].change >= 0 ? "var(--green)" : "var(--red)") : "var(--muted)" }}>
-                              {prices[h.t] ? `${prices[h.t].change >= 0 ? "+" : ""}${prices[h.t].change.toFixed(2)}%` : "—"}
-                            </td>
+                          {/* Live Price */}
+                          <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--sub)" }}>
+                            {lp ? `${port.symbol}${lp.toFixed(2)}` : "—"}
+                          </td>
 
-                            {isIncome && <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--green)" }}>{h.y}%</td>}
+                          {/* Day % */}
+                          <td style={{ padding: "5px 4px", textAlign: "right", fontWeight: 600,
+                            color: prices[h.t] ? (prices[h.t].change >= 0 ? "var(--green)" : "var(--red)") : "var(--muted)" }}>
+                            {prices[h.t] ? `${prices[h.t].change >= 0 ? "+" : ""}${prices[h.t].change.toFixed(2)}%` : "—"}
+                          </td>
 
-                            {/* Edit button */}
+                          {isIncome && <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--green)" }}>{h.y}%</td>}
+                          {isIncome && isJunior && <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--muted)", fontSize: 11 }}>{h.cadence}</td>}
+
+                          {/* Where — junior only */}
+                          {isJunior && <td style={{ padding: "5px 4px", color: "var(--muted)", fontSize: 11, maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.where}</td>}
+
+                          {/* Edit ticker/name — adult only */}
+                          {!isJunior && (
                             <td style={{ padding: "5px 0", textAlign: "right", whiteSpace: "nowrap" }}>
                               {isEditing ? (
                                 <span style={{ display: "flex", gap: 3 }}>
@@ -747,14 +735,14 @@ export default function Tracker() {
                                 </span>
                               )}
                             </td>
-                          </>
-                        )}
+                          )}
+                        </>
                       </tr>
                     )
                   })}
 
                   {/* Totals row */}
-                  {!isJunior && hasAnyPositions && (
+                  {hasAnyPositions && (
                     <tr style={{ borderTop: "2px solid var(--divider)", fontWeight: 700 }}>
                       <td colSpan={4} style={{ padding: "6px 4px", color: "var(--muted)", fontSize: 11 }}>TOTAL</td>
                       <td style={{ padding: "6px 4px", textAlign: "right", color: "var(--text)" }}>{fmtDec(totalMarketValue, port.symbol)}</td>
