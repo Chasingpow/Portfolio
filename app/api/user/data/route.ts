@@ -38,21 +38,21 @@ export async function POST(req: NextRequest) {
     ops.push(supabase.from("user_holdings").upsert(
       { discord_id: id, region, port_type, holdings, updated_at: new Date().toISOString() },
       { onConflict: "discord_id,region,port_type" }
-    ))
+    ).then(() => {}))
   }
 
   if (wildcards !== undefined) {
     ops.push(supabase.from("user_wildcards").upsert(
       { discord_id: id, region, port_type, wildcards, updated_at: new Date().toISOString() },
       { onConflict: "discord_id,region,port_type" }
-    ))
+    ).then(() => {}))
   }
 
   if (projection !== undefined) {
     ops.push(supabase.from("user_projections").upsert(
       { discord_id: id, region, port_type, ...projection, updated_at: new Date().toISOString() },
       { onConflict: "discord_id,region,port_type" }
-    ))
+    ).then(() => {}))
   }
 
   await Promise.all(ops)
