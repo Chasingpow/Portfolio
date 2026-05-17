@@ -18,6 +18,7 @@ type Mode     = "junior" | "adult"
 interface Holding {
   t: string; n: string; p: number; type: string; where: string
   cadence?: string; y?: number
+  shares?: number; avgCost?: number
 }
 interface Wildcard {
   t: string; n: string; sector: string; kind: string; active: boolean
@@ -40,6 +41,9 @@ const PRIORITY_LABEL:  Record<number,string> = { 1:"Open First", 2:"Next", 3:"Op
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(val: number, sym: string) {
   return sym + val.toLocaleString("en-US", { maximumFractionDigits: 0 })
+}
+function fmtDec(val: number, sym: string) {
+  return sym + val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 function scoreColor(s: number) {
@@ -110,25 +114,24 @@ function dynamicTaxTips(holdings: Holding[], pt: PortType, region: Region): stri
   if (hasCovCall && region === "Canada")
     tips.push("ZWC covered-call distributions are partly ROC — most tax-efficient in TFSA; avoid RRSP where you'd lose the capital-gains advantage.")
   if (hasStock && region === "US")
-    tips.push("Growth stocks (NVDA, MSFT, AAPL, GOOGL) generate capital gains — holding them in a Roth IRA makes all future gains permanently tax-free. Best account for your highest-conviction picks.")
+    tips.push("Growth stocks (NVDA, MSFT, AAPL, GOOGL) generate capital gains — holding them in a Roth IRA makes all future gains permanently tax-free.")
   if (hasStock && region === "Canada")
     tips.push("Canadian stocks held in an ITF account attribute capital gains to the child's lower tax bracket — potentially saving 30–40% on realized gains.")
   if (hasDivETF && region === "US")
     tips.push("SCHD pays qualified dividends (0–20% tax rate) — acceptable in taxable brokerage. Still better in a Roth IRA where dividends compound 100% tax-free.")
   if (hasInvIT && region === "India")
-    tips.push("InvIT distributions (PowerGrid, IndiGrid) are the most tax-efficient income in India: capital return is tax-free, interest is at slab rate, dividend is exempt. Prioritize InvITs over REITs for income.")
+    tips.push("InvIT distributions (PowerGrid, IndiGrid) are the most tax-efficient income in India: capital return is tax-free, interest is at slab rate, dividend is exempt.")
   if (hasPipe && region === "Canada")
     tips.push("Pipeline income (ENB, PPL, TRP) qualifies for the dividend tax credit in non-registered accounts — effective rate ~24–30% vs ~50% on interest income.")
   if (pt === "growth" && region === "US")
-    tips.push("Rule of thumb: Roth IRA first (highest-growth picks), UTMA second (broad ETFs), 529 only if education is the clear goal. Never waste Roth space on bonds or income payers.")
+    tips.push("Rule of thumb: Roth IRA first (highest-growth picks), UTMA second (broad ETFs), 529 only if education is the clear goal.")
   if (pt === "growth" && region === "Canada")
     tips.push("RESP first ($2,500/yr to max the CESG grant), then ITF for everything above. At 18, roll RESP + ITF into TFSA as fast as contribution room allows.")
   if (pt === "growth" && region === "India")
-    tips.push("LRS limit is USD 250K/yr per person. The 20% TCS above INR 7L is a tax pre-payment, not a penalty — credit it back when you file. File Form 67 to claim the US withholding credit.")
+    tips.push("LRS limit is USD 250K/yr per person. The 20% TCS above INR 7L is a tax pre-payment, not a penalty — credit it back when you file.")
   return tips.slice(0, 5)
 }
 
-// Junior-mode: simple account tips focused on minor accounts
 const JUNIOR_TAX_TIPS: Record<Region, string[]> = {
   US: [
     "Open a Custodial Roth IRA as soon as your child has any earned income (babysitting, lawn mowing, etc.). Contributions grow 100% tax-free forever.",
@@ -164,24 +167,20 @@ export default function Tracker() {
   const [portType,  setPortType]  = useState<PortType>("growth")
   const [wildcards, setWildcards] = useState<Record<string, Wildcard[]>>({})
 
-  // Adult: custom holdings
   const [customHoldings, setCustomHoldings] = useState<Record<string, Holding[]>>({})
   const [editingIdx,     setEditingIdx]     = useState<number | null>(null)
   const [editTicker,     setEditTicker]     = useState("")
   const [editName,       setEditName]       = useState("")
 
-  // Adult: wildcard custom add
   const [customTicker, setCustomTicker] = useState("")
   const [customName,   setCustomName]   = useState("")
 
-  // Calculator
-  const [startBal,    setStartBal]    = useState(0)
-  const [annualDep,   setAnnualDep]   = useState(7000)
-  const [years,       setYears]       = useState(30)
-  const [returnPct,   setReturnPct]   = useState(9)
-  const [targetGoal,  setTargetGoal]  = useState(1000000)
+  const [startBal,   setStartBal]   = useState(0)
+  const [annualDep,  setAnnualDep]  = useState(7000)
+  const [years,      setYears]      = useState(30)
+  const [returnPct,  setReturnPct]  = useState(9)
+  const [targetGoal, setTargetGoal] = useState(1000000)
 
-  // Live prices: ticker -> { price, change }
   const [prices, setPrices] = useState<Record<string, { price: number; change: number }>>({})
 
   useEffect(() => {
@@ -203,7 +202,6 @@ export default function Tracker() {
     }
   }, [region, portType, data])
 
-  // Load saved user data from Supabase when signed in
   useEffect(() => {
     if (!discordId || !data) return
     fetch("/api/user/data").then(r => r.json()).then(saved => {
@@ -217,7 +215,6 @@ export default function Tracker() {
       if (Object.keys(wc).length) setWildcards(wc)
 
       for (const row of saved.projections) {
-        // apply whichever was last saved
         if (row.region === region && row.port_type === portType) {
           setStartBal(row.start_bal)
           setAnnualDep(row.annual_dep)
@@ -230,7 +227,6 @@ export default function Tracker() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [discordId, data])
 
-  // Fetch live prices whenever the portfolio view changes
   useEffect(() => {
     if (!data) return
     const port = data[region][portType]
@@ -242,7 +238,6 @@ export default function Tracker() {
     }).then(r => r.json()).then(setPrices)
   }, [data, region, portType])
 
-  // Auto-save user data 2s after any change (debounced)
   useEffect(() => {
     if (!discordId || !data) return
     const timer = setTimeout(() => {
@@ -261,7 +256,6 @@ export default function Tracker() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [discordId, region, portType, customHoldings, wildcards, startBal, annualDep, years, returnPct, targetGoal])
 
-  // All useMemo hooks must be declared before any early returns (Rules of Hooks)
   const wcKey = `${region}-${portType}`
 
   const effectiveHoldings = useMemo(() => {
@@ -286,7 +280,6 @@ export default function Tracker() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, data, JSON.stringify(effectiveHoldings), portType, region])
 
-  // Early return after all hooks
   if (!data) return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"var(--bg)" }}>
       <span style={{ color:"var(--sub)" }}>Loading portfolios…</span>
@@ -295,10 +288,30 @@ export default function Tracker() {
 
   const port     = data[region][portType]
   const isIncome = portType === "income"
+  const isJunior = mode === "junior"
 
   const isCustomized    = mode === "adult" && !!customHoldings[wcKey]
   const activeWildcards = wildcards[wcKey]?.filter(w => w.active) ?? []
   const wildcardSlotPct = activeWildcards.length > 0 ? (5 / activeWildcards.length).toFixed(1) : "5.0"
+
+  // ── Position calculations ───────────────────────────────────────────────────
+  const positionData = effectiveHoldings.map(h => {
+    const lp = prices[h.t]?.price ?? null
+    const shares = h.shares ?? null
+    const avgCost = h.avgCost ?? null
+    const marketValue = (shares !== null && lp !== null) ? shares * lp : null
+    const costBasis   = (shares !== null && avgCost !== null) ? shares * avgCost : null
+    const gainLoss    = (marketValue !== null && costBasis !== null) ? marketValue - costBasis : null
+    const gainLossPct = (avgCost !== null && lp !== null && avgCost > 0) ? (lp - avgCost) / avgCost * 100 : null
+    return { marketValue, costBasis, gainLoss, gainLossPct }
+  })
+
+  const totalMarketValue = positionData.reduce((s, p) => s + (p.marketValue ?? 0), 0)
+  const totalGainLoss    = positionData.reduce((s, p) => s + (p.gainLoss ?? 0), 0)
+  const totalCostBasis   = positionData.reduce((s, p) => s + (p.costBasis ?? 0), 0)
+  const totalGainLossPct = totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : null
+  const hasAnyPositions  = positionData.some(p => p.marketValue !== null)
+  const positionsFilled  = positionData.filter(p => p.marketValue !== null).length
 
   // ── Wildcard helpers ────────────────────────────────────────────────────────
   function toggleWildcard(ticker: string) {
@@ -313,7 +326,7 @@ export default function Tracker() {
     setCustomTicker(""); setCustomName("")
   }
 
-  // ── Editable holdings helpers (adult only) ──────────────────────────────────
+  // ── Holdings helpers ────────────────────────────────────────────────────────
   function startEdit(idx: number) {
     setEditingIdx(idx)
     setEditTicker(effectiveHoldings[idx].t)
@@ -342,11 +355,22 @@ export default function Tracker() {
     setCustomHoldings(prev => { const n = { ...prev }; delete n[wcKey]; return n })
     setEditingIdx(null)
   }
+  function updatePosition(idx: number, field: "shares" | "avgCost", raw: string) {
+    const value = raw === "" ? undefined : parseFloat(raw)
+    const base = port.base_holdings
+    const curr: Holding[] = (customHoldings[wcKey] ?? base).map(h => ({ ...h }))
+    curr[idx] = { ...curr[idx], [field]: value }
+    setCustomHoldings(prev => ({ ...prev, [wcKey]: curr }))
+  }
 
   // ── Pie chart ───────────────────────────────────────────────────────────────
+  const pieLabels = effectiveHoldings.map(h => h.t)
+  const pieValues = hasAnyPositions && totalMarketValue > 0
+    ? positionData.map(p => p.marketValue !== null ? Math.round((p.marketValue / totalMarketValue) * 100) : 0)
+    : effectiveHoldings.map(h => h.p)
   const pieData = {
-    labels: effectiveHoldings.map(h => h.t),
-    datasets: [{ data: effectiveHoldings.map(h => h.p), backgroundColor: effectiveHoldings.map((_, i) => SLICE_COLORS[i % SLICE_COLORS.length]), borderWidth: 1, borderColor: "var(--card)" }]
+    labels: pieLabels,
+    datasets: [{ data: pieValues, backgroundColor: effectiveHoldings.map((_, i) => SLICE_COLORS[i % SLICE_COLORS.length]), borderWidth: 1, borderColor: "var(--card)" }]
   }
   const pieOptions = {
     cutout: "55%", responsive: true,
@@ -354,14 +378,15 @@ export default function Tracker() {
   }
 
   // ── Growth calculator ───────────────────────────────────────────────────────
+  const calcStartBal = hasAnyPositions && totalMarketValue > 0 ? totalMarketValue : startBal
   const calcData = (() => {
     const labels: string[] = [], values: number[] = [], deposited: number[] = []
-    let bal = startBal, dep = 0
+    let bal = calcStartBal, dep = 0
     const r = returnPct / 100
     for (let y = 0; y <= years; y++) {
       labels.push(y === 0 ? "Now" : `Yr ${y}`)
       values.push(Math.round(bal))
-      deposited.push(Math.round(startBal + dep))
+      deposited.push(Math.round(calcStartBal + dep))
       if (y < years) { bal = (bal + annualDep) * (1 + r); dep += annualDep }
     }
     return { labels, values, deposited, finalVal: values[values.length - 1], totalDep: deposited[deposited.length - 1], growth: values[values.length - 1] - deposited[deposited.length - 1] }
@@ -384,19 +409,22 @@ export default function Tracker() {
     }
   }
 
-  // Income summary
   const blendedYield  = isIncome ? effectiveHoldings.reduce((s, h) => s + (h.y ?? 0) * h.p / 100, 0) : null
   const monthlyIncome = blendedYield ? (annualDep * blendedYield / 100 / 12) : null
 
-  // CSV
   function exportCSV(all: boolean) {
-    const rows = ["Portfolio,Ticker,Name,Allocation%,Type,Where,Cadence,Yield%"]
-    const regions: Region[]  = all ? ["US","Canada","India"] : [region]
-    const types:   PortType[] = all ? ["growth","income"]    : [portType]
+    const rows = ["Portfolio,Ticker,Name,Allocation%,Shares,AvgCost,MarketValue,GainLoss,Type,Where,Cadence,Yield%"]
+    const regions: Region[]   = all ? ["US","Canada","India"] : [region]
+    const types:   PortType[] = all ? ["growth","income"]     : [portType]
     for (const reg of regions) for (const pt of types) {
       const p = data![reg][pt]
       const hh = (reg === region && pt === portType) ? effectiveHoldings : p.base_holdings
-      for (const h of hh) rows.push([p.name, h.t, `"${h.n}"`, h.p, h.type, `"${h.where}"`, h.cadence??"-", h.y??"-"].join(","))
+      for (const h of hh) {
+        const lp = prices[h.t]?.price
+        const mv = (h.shares && lp) ? (h.shares * lp).toFixed(2) : ""
+        const gl = (h.shares && h.avgCost && lp) ? ((lp - h.avgCost) * h.shares).toFixed(2) : ""
+        rows.push([p.name, h.t, `"${h.n}"`, h.p, h.shares??"-", h.avgCost??"-", mv||"-", gl||"-", h.type, `"${h.where}"`, h.cadence??"-", h.y??"-"].join(","))
+      }
     }
     const a = document.createElement("a")
     a.href = URL.createObjectURL(new Blob([rows.join("\n")], { type: "text/csv" }))
@@ -405,7 +433,7 @@ export default function Tracker() {
   }
 
   const scoreCol = scoreColor(score.overall)
-  const isJunior = mode === "junior"
+  const inputStyle = { background: "var(--card-alt)", border: "1px solid var(--divider)", borderRadius: 4, padding: "3px 5px", color: "var(--text)", fontSize: 12, width: "100%" }
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -423,7 +451,6 @@ export default function Tracker() {
           </div>
 
           <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            {/* Mode toggle */}
             <div style={{ display: "flex", gap: 4, background: "var(--card-alt)", borderRadius: 10, padding: 4, border: "1px solid var(--divider)" }}>
               <button onClick={() => setMode("junior")} style={{
                 padding: "10px 22px", borderRadius: 7, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, transition: "all 0.2s",
@@ -437,7 +464,6 @@ export default function Tracker() {
               }}>Adult Portfolio</button>
             </div>
 
-            {/* Auth button */}
             {status === "loading" ? null : session ? (
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {session.user?.image && (
@@ -472,20 +498,20 @@ export default function Tracker() {
             <span style={{ fontSize: 20 }}>🌱</span>
             <div>
               <div style={{ fontWeight: 700, color: "#6ECB81", fontSize: 14 }}>Junior Portfolio — Recommended Starting Point</div>
-              <div style={{ color: "var(--sub)", fontSize: 12 }}>These are the original, expert-curated holdings. Great for kids, students, and anyone just getting started. Holdings are locked — switch to Adult Portfolio to customize.</div>
+              <div style={{ color: "var(--sub)", fontSize: 12 }}>These are the original, expert-curated holdings. Holdings are locked — switch to Adult Portfolio to track your real positions.</div>
             </div>
           </div>
         ) : (
           <div style={{ background: "rgba(88,101,242,0.12)", border: "1px solid var(--accent)", borderRadius: 10, padding: "12px 20px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 20 }}>🔓</span>
             <div>
-              <div style={{ fontWeight: 700, color: "var(--accent)", fontSize: 14 }}>Adult Portfolio — Fully Customizable</div>
-              <div style={{ color: "var(--sub)", fontSize: 12 }}>Swap any holding for your own picks, toggle wildcards, set a target goal, and get a scored analysis of your custom portfolio.</div>
+              <div style={{ fontWeight: 700, color: "var(--accent)", fontSize: 14 }}>Adult Portfolio — Track Your Real Positions</div>
+              <div style={{ color: "var(--sub)", fontSize: 12 }}>Enter your shares and average cost per holding to see your actual market value, gain/loss, and real portfolio allocation.</div>
             </div>
           </div>
         )}
 
-        {/* Portfolio type + region toggles */}
+        {/* ── Portfolio type + region toggles ── */}
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
           <div style={{ display: "flex", gap: 4, background: "var(--card)", borderRadius: 8, padding: 4 }}>
             {(["growth","income"] as PortType[]).map(pt => (
@@ -509,110 +535,242 @@ export default function Tracker() {
 
         <h2 style={{ fontWeight: 700, fontSize: 20, marginBottom: 20, color: "var(--text)" }}>{port.name}</h2>
 
+        {/* ── Portfolio Value Summary (adult, when positions entered) ── */}
+        {!isJunior && hasAnyPositions && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16, marginBottom: 20 }}>
+            <div style={{ background: "var(--card)", borderRadius: 10, padding: 18, textAlign: "center" }}>
+              <div style={{ color: "var(--sub)", fontSize: 12, marginBottom: 4 }}>Total Market Value</div>
+              <div style={{ color: "var(--accent)", fontSize: 24, fontWeight: 800 }}>{fmtDec(totalMarketValue, port.symbol)}</div>
+              <div style={{ color: "var(--muted)", fontSize: 11, marginTop: 2 }}>{positionsFilled} of {effectiveHoldings.length} positions entered</div>
+            </div>
+            <div style={{ background: "var(--card)", borderRadius: 10, padding: 18, textAlign: "center" }}>
+              <div style={{ color: "var(--sub)", fontSize: 12, marginBottom: 4 }}>Total Cost Basis</div>
+              <div style={{ color: "var(--text)", fontSize: 24, fontWeight: 800 }}>{fmtDec(totalCostBasis, port.symbol)}</div>
+            </div>
+            <div style={{ background: "var(--card)", borderRadius: 10, padding: 18, textAlign: "center" }}>
+              <div style={{ color: "var(--sub)", fontSize: 12, marginBottom: 4 }}>Total Gain / Loss</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: totalGainLoss >= 0 ? "var(--green)" : "var(--red)" }}>
+                {totalGainLoss >= 0 ? "+" : ""}{fmtDec(totalGainLoss, port.symbol)}
+              </div>
+              {totalGainLossPct !== null && (
+                <div style={{ fontSize: 13, fontWeight: 600, color: totalGainLoss >= 0 ? "var(--green)" : "var(--red)" }}>
+                  {totalGainLossPct >= 0 ? "+" : ""}{totalGainLossPct.toFixed(2)}%
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ── Two-column grid ── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
 
-          {/* Left: Pie + Holdings */}
-          <div style={{ background: "var(--card)", borderRadius: 12, padding: 24 }}>
+          {/* Left: Holdings */}
+          <div style={{ background: "var(--card)", borderRadius: 12, padding: 24, overflowX: "auto" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <h3 style={{ fontWeight: 700, color: "var(--text)", margin: 0 }}>Holdings</h3>
-              {!isJunior && (
+              {!isJunior ? (
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   {isCustomized && (
                     <button onClick={resetAllHoldings} style={{ fontSize: 11, color: "var(--muted)", background: "var(--card-alt)", border: "1px solid var(--divider)", borderRadius: 4, padding: "3px 8px", cursor: "pointer" }}>
                       Reset all
                     </button>
                   )}
-                  <span style={{ fontSize: 11, color: "var(--muted)" }}>✏️ Click a row to swap any ticker</span>
+                  <span style={{ fontSize: 11, color: "var(--muted)" }}>✏️ edit ticker/name</span>
                 </div>
+              ) : (
+                <span style={{ fontSize: 11, color: "#6ECB81" }}>Original · locked</span>
               )}
-              {isJunior && <span style={{ fontSize: 11, color: "#6ECB81" }}>Original · locked</span>}
             </div>
 
-            <div style={{ width: 220, margin: "0 auto 20px" }}>
+            <div style={{ width: 200, margin: "0 auto 16px" }}>
               <Doughnut data={pieData} options={pieOptions} />
             </div>
+            {!isJunior && hasAnyPositions && (
+              <div style={{ textAlign: "center", fontSize: 11, color: "var(--muted)", marginBottom: 8 }}>Pie shows actual allocation based on market value</div>
+            )}
 
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginBottom: 20 }}>
-              {effectiveHoldings.map((h, i) => (
-                <span key={h.t} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--sub)" }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 2, background: SLICE_COLORS[i % SLICE_COLORS.length], display: "inline-block" }} />
-                  {h.t} {h.p}%
-                </span>
-              ))}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "5px 12px", marginBottom: 16 }}>
+              {effectiveHoldings.map((h, i) => {
+                const pct = hasAnyPositions && totalMarketValue > 0 && positionData[i].marketValue !== null
+                  ? Math.round((positionData[i].marketValue! / totalMarketValue) * 100)
+                  : h.p
+                return (
+                  <span key={h.t} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--sub)" }}>
+                    <span style={{ width: 10, height: 10, borderRadius: 2, background: SLICE_COLORS[i % SLICE_COLORS.length], display: "inline-block" }} />
+                    {h.t} {pct}%
+                  </span>
+                )
+              })}
             </div>
 
-            <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ color: "var(--muted)", borderBottom: "1px solid var(--divider)" }}>
-                  <th style={{ textAlign: "left", padding: "4px 0" }}>Ticker</th>
-                  <th style={{ textAlign: "left", padding: "4px 0" }}>Name</th>
-                  <th style={{ textAlign: "right", padding: "4px 0" }}>Alloc</th>
-                  <th style={{ textAlign: "right", padding: "4px 0" }}>Price</th>
-                  <th style={{ textAlign: "right", padding: "4px 0" }}>Day %</th>
-                  {isIncome && <th style={{ textAlign: "right", padding: "4px 0" }}>Yield</th>}
-                  {isIncome && <th style={{ textAlign: "right", padding: "4px 0" }}>Cadence</th>}
-                  <th style={{ textAlign: "left", padding: "4px 8px" }}>Where</th>
-                  {!isJunior && <th style={{ padding: "4px 0" }} />}
-                </tr>
-              </thead>
-              <tbody>
-                {effectiveHoldings.map((h, i) => {
-                  const isEditing  = !isJunior && editingIdx === i
-                  const isDefault  = h.t === port.base_holdings[i]?.t && h.n === port.base_holdings[i]?.n
-                  const col        = SLICE_COLORS[i % SLICE_COLORS.length]
-                  return (
-                    <tr key={i} style={{ borderBottom: "1px solid var(--divider)" }}>
-                      <td style={{ padding: "6px 0" }}>
-                        {isEditing ? (
-                          <input value={editTicker} onChange={e => setEditTicker(e.target.value)}
-                            style={{ width: 64, background: "var(--card-alt)", border: "1px solid var(--accent)", borderRadius: 4, padding: "3px 6px", color: "var(--text)", fontSize: 12 }} />
-                        ) : (
-                          <span style={{ fontWeight: 700, color: col }}>
-                            {h.t}{!isDefault && !isJunior && <span style={{ color: "var(--accent)", fontSize: 9, marginLeft: 2 }}>★</span>}
-                          </span>
-                        )}
-                      </td>
-                      <td style={{ padding: "6px 4px", color: "var(--sub)", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {isEditing ? (
-                          <input value={editName} onChange={e => setEditName(e.target.value)}
-                            style={{ width: "100%", background: "var(--card-alt)", border: "1px solid var(--accent)", borderRadius: 4, padding: "3px 6px", color: "var(--text)", fontSize: 12 }} />
-                        ) : h.n}
-                      </td>
-                      <td style={{ padding: "6px 0", textAlign: "right", color: "var(--text)" }}>{h.p}%</td>
-                      <td style={{ padding: "6px 0", textAlign: "right", color: "var(--sub)", fontSize: 12 }}>
-                        {prices[h.t] ? `${port.symbol}${prices[h.t].price.toFixed(2)}` : "—"}
-                      </td>
-                      <td style={{ padding: "6px 0", textAlign: "right", fontSize: 12, fontWeight: 600,
-                        color: prices[h.t] ? (prices[h.t].change >= 0 ? "var(--green)" : "var(--red)") : "var(--muted)" }}>
-                        {prices[h.t] ? `${prices[h.t].change >= 0 ? "+" : ""}${prices[h.t].change.toFixed(2)}%` : "—"}
-                      </td>
-                      {isIncome && <td style={{ padding: "6px 0", textAlign: "right", color: "var(--green)" }}>{h.y}%</td>}
-                      {isIncome && <td style={{ padding: "6px 0", textAlign: "right", color: "var(--muted)", fontSize: 11 }}>{h.cadence}</td>}
-                      <td style={{ padding: "6px 8px", color: "var(--muted)", fontSize: 11, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.where}</td>
-                      {!isJunior && (
-                        <td style={{ padding: "6px 0", textAlign: "right", whiteSpace: "nowrap" }}>
+            {/* ── Holdings table ── */}
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse", minWidth: isJunior ? 400 : 560 }}>
+                <thead>
+                  <tr style={{ color: "var(--muted)", borderBottom: "1px solid var(--divider)" }}>
+                    <th style={{ textAlign: "left", padding: "4px 4px 4px 0" }}>Ticker</th>
+                    <th style={{ textAlign: "left", padding: "4px 4px" }}>Name</th>
+                    {isJunior ? (
+                      <>
+                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Alloc</th>
+                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Price</th>
+                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Day%</th>
+                        {isIncome && <th style={{ textAlign: "right", padding: "4px 4px" }}>Yield</th>}
+                        {isIncome && <th style={{ textAlign: "right", padding: "4px 4px" }}>Cadence</th>}
+                        <th style={{ textAlign: "left", padding: "4px 4px" }}>Where</th>
+                      </>
+                    ) : (
+                      <>
+                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Shares</th>
+                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Avg Cost</th>
+                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Mkt Value</th>
+                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Gain/Loss</th>
+                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Price</th>
+                        <th style={{ textAlign: "right", padding: "4px 4px" }}>Day%</th>
+                        {isIncome && <th style={{ textAlign: "right", padding: "4px 4px" }}>Yield</th>}
+                        <th style={{ padding: "4px 0" }} />
+                      </>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {effectiveHoldings.map((h, i) => {
+                    const isEditing = !isJunior && editingIdx === i
+                    const isDefault = h.t === port.base_holdings[i]?.t && h.n === port.base_holdings[i]?.n
+                    const col       = SLICE_COLORS[i % SLICE_COLORS.length]
+                    const pd        = positionData[i]
+                    const lp        = prices[h.t]?.price ?? null
+
+                    return (
+                      <tr key={i} style={{ borderBottom: "1px solid var(--divider)" }}>
+                        {/* Ticker */}
+                        <td style={{ padding: "5px 4px 5px 0" }}>
                           {isEditing ? (
-                            <span style={{ display: "flex", gap: 4 }}>
-                              <button onClick={saveEdit} style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, border: "none", background: "var(--green)", color: "#1e1f22", cursor: "pointer", fontWeight: 700 }}>Save</button>
-                              <button onClick={() => setEditingIdx(null)} style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, border: "none", background: "var(--divider)", color: "var(--sub)", cursor: "pointer" }}>✕</button>
-                            </span>
+                            <input value={editTicker} onChange={e => setEditTicker(e.target.value)}
+                              style={{ ...inputStyle, width: 58 }} />
                           ) : (
-                            <span style={{ display: "flex", gap: 4 }}>
-                              <button onClick={() => startEdit(i)} title="Edit this holding" style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, border: "none", background: "var(--card-alt)", color: "var(--muted)", cursor: "pointer" }}>✏️</button>
-                              {!isDefault && <button onClick={() => resetHolding(i)} title="Reset to default" style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, border: "none", background: "var(--card-alt)", color: "var(--muted)", cursor: "pointer" }}>↺</button>}
+                            <span style={{ fontWeight: 700, color: col }}>
+                              {h.t}{!isDefault && !isJunior && <span style={{ color: "var(--accent)", fontSize: 9, marginLeft: 2 }}>★</span>}
                             </span>
                           )}
                         </td>
-                      )}
+
+                        {/* Name */}
+                        <td style={{ padding: "5px 4px", color: "var(--sub)", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {isEditing ? (
+                            <input value={editName} onChange={e => setEditName(e.target.value)}
+                              style={{ ...inputStyle, width: 90 }} />
+                          ) : h.n}
+                        </td>
+
+                        {isJunior ? (
+                          <>
+                            <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--text)" }}>{h.p}%</td>
+                            <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--sub)" }}>
+                              {lp ? `${port.symbol}${lp.toFixed(2)}` : "—"}
+                            </td>
+                            <td style={{ padding: "5px 4px", textAlign: "right", fontWeight: 600,
+                              color: prices[h.t] ? (prices[h.t].change >= 0 ? "var(--green)" : "var(--red)") : "var(--muted)" }}>
+                              {prices[h.t] ? `${prices[h.t].change >= 0 ? "+" : ""}${prices[h.t].change.toFixed(2)}%` : "—"}
+                            </td>
+                            {isIncome && <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--green)" }}>{h.y}%</td>}
+                            {isIncome && <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--muted)", fontSize: 11 }}>{h.cadence}</td>}
+                            <td style={{ padding: "5px 4px", color: "var(--muted)", fontSize: 11, maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.where}</td>
+                          </>
+                        ) : (
+                          <>
+                            {/* Shares — always editable */}
+                            <td style={{ padding: "5px 4px", textAlign: "right" }}>
+                              <input
+                                type="number" min={0} step="any"
+                                value={h.shares ?? ""}
+                                placeholder="0"
+                                onChange={e => updatePosition(i, "shares", e.target.value)}
+                                style={{ ...inputStyle, width: 64, textAlign: "right" }}
+                              />
+                            </td>
+
+                            {/* Avg Cost — always editable */}
+                            <td style={{ padding: "5px 4px", textAlign: "right" }}>
+                              <input
+                                type="number" min={0} step="any"
+                                value={h.avgCost ?? ""}
+                                placeholder="0.00"
+                                onChange={e => updatePosition(i, "avgCost", e.target.value)}
+                                style={{ ...inputStyle, width: 72, textAlign: "right" }}
+                              />
+                            </td>
+
+                            {/* Market Value */}
+                            <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--text)", fontWeight: 600 }}>
+                              {pd.marketValue !== null ? fmtDec(pd.marketValue, port.symbol) : "—"}
+                            </td>
+
+                            {/* Gain/Loss */}
+                            <td style={{ padding: "5px 4px", textAlign: "right" }}>
+                              {pd.gainLoss !== null ? (
+                                <span style={{ color: pd.gainLoss >= 0 ? "var(--green)" : "var(--red)", fontWeight: 600 }}>
+                                  {pd.gainLoss >= 0 ? "+" : ""}{fmtDec(pd.gainLoss, port.symbol)}
+                                  {pd.gainLossPct !== null && (
+                                    <span style={{ fontSize: 10, display: "block", fontWeight: 400 }}>
+                                      {pd.gainLossPct >= 0 ? "+" : ""}{pd.gainLossPct.toFixed(1)}%
+                                    </span>
+                                  )}
+                                </span>
+                              ) : "—"}
+                            </td>
+
+                            {/* Live Price */}
+                            <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--sub)" }}>
+                              {lp ? `${port.symbol}${lp.toFixed(2)}` : "—"}
+                            </td>
+
+                            {/* Day % */}
+                            <td style={{ padding: "5px 4px", textAlign: "right", fontWeight: 600,
+                              color: prices[h.t] ? (prices[h.t].change >= 0 ? "var(--green)" : "var(--red)") : "var(--muted)" }}>
+                              {prices[h.t] ? `${prices[h.t].change >= 0 ? "+" : ""}${prices[h.t].change.toFixed(2)}%` : "—"}
+                            </td>
+
+                            {isIncome && <td style={{ padding: "5px 4px", textAlign: "right", color: "var(--green)" }}>{h.y}%</td>}
+
+                            {/* Edit button */}
+                            <td style={{ padding: "5px 0", textAlign: "right", whiteSpace: "nowrap" }}>
+                              {isEditing ? (
+                                <span style={{ display: "flex", gap: 3 }}>
+                                  <button onClick={saveEdit} style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, border: "none", background: "var(--green)", color: "#1e1f22", cursor: "pointer", fontWeight: 700 }}>Save</button>
+                                  <button onClick={() => setEditingIdx(null)} style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, border: "none", background: "var(--divider)", color: "var(--sub)", cursor: "pointer" }}>✕</button>
+                                </span>
+                              ) : (
+                                <span style={{ display: "flex", gap: 3 }}>
+                                  <button onClick={() => startEdit(i)} title="Edit ticker/name" style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, border: "none", background: "var(--card-alt)", color: "var(--muted)", cursor: "pointer" }}>✏️</button>
+                                  {!isDefault && <button onClick={() => resetHolding(i)} title="Reset to default" style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, border: "none", background: "var(--card-alt)", color: "var(--muted)", cursor: "pointer" }}>↺</button>}
+                                </span>
+                              )}
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    )
+                  })}
+
+                  {/* Totals row */}
+                  {!isJunior && hasAnyPositions && (
+                    <tr style={{ borderTop: "2px solid var(--divider)", fontWeight: 700 }}>
+                      <td colSpan={4} style={{ padding: "6px 4px", color: "var(--muted)", fontSize: 11 }}>TOTAL</td>
+                      <td style={{ padding: "6px 4px", textAlign: "right", color: "var(--text)" }}>{fmtDec(totalMarketValue, port.symbol)}</td>
+                      <td style={{ padding: "6px 4px", textAlign: "right", color: totalGainLoss >= 0 ? "var(--green)" : "var(--red)" }}>
+                        {totalGainLoss >= 0 ? "+" : ""}{fmtDec(totalGainLoss, port.symbol)}
+                        {totalGainLossPct !== null && <span style={{ fontSize: 10, display: "block", fontWeight: 400 }}>{totalGainLossPct >= 0 ? "+" : ""}{totalGainLossPct.toFixed(1)}%</span>}
+                      </td>
+                      <td colSpan={isIncome ? 3 : 2} />
                     </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
             {isIncome && blendedYield != null && (
-              <div style={{ marginTop: 20, padding: 16, background: "var(--card-alt)", borderRadius: 8 }}>
+              <div style={{ marginTop: 16, padding: 14, background: "var(--card-alt)", borderRadius: 8 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                   <span style={{ color: "var(--sub)", fontSize: 13 }}>Blended yield</span>
                   <span style={{ color: "var(--amber)", fontWeight: 700 }}>{blendedYield.toFixed(1)}%</span>
@@ -705,7 +863,7 @@ export default function Tracker() {
           </div>
           <p style={{ color: "var(--muted)", fontSize: 12, marginBottom: 16 }}>
             {isJunior
-              ? "These are higher-risk bonus picks for the 5% growth slot. Click to see the thesis — toggling is available in Adult mode."
+              ? "These are higher-risk bonus picks for the 5% growth slot. Toggling is available in Adult mode."
               : "Click a card to toggle in or out. Add your own tickers below."}
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginBottom: isJunior ? 0 : 20 }}>
@@ -746,13 +904,17 @@ export default function Tracker() {
 
         {/* ── Growth Calculator ── */}
         <div style={{ background: "var(--card)", borderRadius: 12, padding: 24, marginBottom: 20 }}>
-          <h3 style={{ fontWeight: 700, color: "var(--text)", marginBottom: 20 }}>
+          <h3 style={{ fontWeight: 700, color: "var(--text)", marginBottom: 4 }}>
             {isJunior ? "Compounding Calculator — See What Time Can Do" : "Growth Calculator"}
           </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 20, marginBottom: 24 }}>
+          {!isJunior && hasAnyPositions && (
+            <div style={{ color: "var(--muted)", fontSize: 12, marginBottom: 16 }}>Starting balance auto-filled from your current market value ({fmtDec(totalMarketValue, port.symbol)})</div>
+          )}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 20, marginBottom: 24, marginTop: 16 }}>
             <div>
               <label style={{ color: "var(--sub)", fontSize: 13, display: "block", marginBottom: 6 }}>Starting balance ({port.symbol})</label>
-              <input type="number" value={startBal} onChange={e => setStartBal(+e.target.value)} min={0}
+              <input type="number" value={hasAnyPositions && totalMarketValue > 0 ? Math.round(totalMarketValue) : startBal}
+                onChange={e => setStartBal(+e.target.value)} min={0}
                 style={{ width: "100%", background: "var(--card-alt)", border: "1px solid var(--divider)", borderRadius: 6, padding: "8px 12px", color: "var(--text)", fontSize: 14 }} />
             </div>
             <div>
@@ -781,7 +943,7 @@ export default function Tracker() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
             {[
-              { label: "Total Deposited",    val: fmt(calcData.totalDep, port.symbol), color: "var(--muted)" },
+              { label: "Total Deposited",   val: fmt(calcData.totalDep, port.symbol), color: "var(--muted)" },
               { label: "Investment Growth",  val: fmt(calcData.growth,   port.symbol), color: "var(--green)" },
               { label: "Final Value",        val: fmt(calcData.finalVal, port.symbol), color: "var(--accent)" },
             ].map(card => (
