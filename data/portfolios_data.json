@@ -1,0 +1,219 @@
+{
+  "US": {
+    "growth": {
+      "name": "US Max-Growth Portfolio",
+      "currency": "USD",
+      "symbol": "$",
+      "annual_default": 7000,
+      "return_pct": 9,
+      "base_holdings": [
+        {"t":"VOO","n":"Vanguard S&P 500 ETF","p":23,"type":"ETF","where":"Roth IRA / UTMA"},
+        {"t":"QQQM","n":"Invesco Nasdaq 100 ETF","p":18,"type":"ETF","where":"Roth IRA (priority)"},
+        {"t":"SCHD","n":"Schwab US Dividend Equity ETF","p":14,"type":"Div ETF","where":"UTMA (child tax rate)"},
+        {"t":"VXUS","n":"Vanguard Total Intl Stock ETF","p":10,"type":"ETF","where":"UTMA"},
+        {"t":"NVDA","n":"NVIDIA","p":6,"type":"Stock","where":"Roth IRA (max growth)"},
+        {"t":"MSFT","n":"Microsoft","p":6,"type":"Stock","where":"Roth IRA"},
+        {"t":"AAPL","n":"Apple","p":6,"type":"Stock","where":"Roth IRA"},
+        {"t":"GOOGL","n":"Alphabet (Google)","p":6,"type":"Stock","where":"Roth IRA"},
+        {"t":"AMZN","n":"Amazon","p":6,"type":"Stock","where":"Roth IRA / UTMA"}
+      ],
+      "wildcard_pool": [
+        {"t":"MU","n":"Micron Technology","sector":"Tech/AI Memory","kind":"tech","active":true,"where":"Roth IRA - AI/HBM memory cycle","blurb":"AI-driven HBM/DRAM cycle. Memory pricing tightening; data-center demand outstripping supply through 2027."},
+        {"t":"SNDK","n":"SanDisk Corp (2025 spinoff)","sector":"Tech/AI Storage","kind":"tech","active":true,"where":"Roth IRA - AI flash storage","blurb":"Western Digital flash spinoff (Feb 2025). Pure-play NAND flash, AI-storage tailwind, undervalued post-spin."},
+        {"t":"PLTR","n":"Palantir Technologies","sector":"AI/Software","kind":"tech","active":true,"where":"Roth IRA - AI/govt platform","blurb":"AIP revenue compounding 40%+ YoY. Enterprise + government dual moat."},
+        {"t":"ARM","n":"Arm Holdings","sector":"Tech/Chip IP","kind":"tech","active":false,"where":"Roth IRA - Chip IP royalties","blurb":"Chip IP licensor for AI/mobile/server CPUs. Royalty model: gets paid per chip shipped."},
+        {"t":"TLN","n":"Talen Energy","sector":"Nuclear/Utility","kind":"alt","active":false,"where":"Roth IRA - Nuclear power for AI data centers","blurb":"Nuclear utility powering AI data centers (Amazon AWS deal). Picks-and-shovels AI play."},
+        {"t":"VKTX","n":"Viking Therapeutics","sector":"Biotech/GLP-1","kind":"alt","active":false,"where":"Roth IRA - Biotech moonshot","blurb":"Phase 2/3 GLP-1 obesity drug. Binary outcome with asymmetric upside."},
+        {"t":"SOFI","n":"SoFi Technologies","sector":"Fintech/Banking","kind":"alt","active":false,"where":"Roth IRA - Digital bank rollup","blurb":"Full bank charter + lending + brokerage. Profitable inflection in 2024."},
+        {"t":"CAVA","n":"Cava Group","sector":"Consumer/Restaurant","kind":"alt","active":false,"where":"Roth IRA - 'Next Chipotle' thesis","blurb":"Mediterranean fast-casual. 30%+ unit growth, expanding margins."}
+      ],
+      "tax_accounts": [
+        {"k":"Custodial Roth IRA","v":"Up to $7,000/yr of earned income. Tax-free growth + withdrawals. Put highest-growth holdings (NVDA, QQQM, wildcards) here.","priority":1},
+        {"k":"UTMA/UGMA Brokerage","v":"Holds anything above the Roth IRA limit. First ~$1,300 unearned income tax-free; next ~$1,300 at child rate.","priority":2},
+        {"k":"529 Plan (education)","v":"Tax-free growth if used for qualified education. Some states give a state tax deduction on contributions.","priority":3}
+      ]
+    },
+    "income": {
+      "name": "US Monthly Income Portfolio",
+      "currency": "USD",
+      "symbol": "$",
+      "annual_default": 10000,
+      "return_pct": 7,
+      "base_holdings": [
+        {"t":"JEPQ","n":"JPMorgan Nasdaq Equity Premium Income","p":14,"type":"Cov-Call ETF","cadence":"Monthly","y":9.5,"where":"Roth IRA - ROC distributions"},
+        {"t":"JEPI","n":"JPMorgan Equity Premium Income","p":12,"type":"Cov-Call ETF","cadence":"Monthly","y":7.2,"where":"Roth IRA - ROC distributions"},
+        {"t":"SCHD","n":"Schwab US Dividend Equity ETF","p":11,"type":"Div ETF","cadence":"Quarterly","y":3.5,"where":"Taxable - qualified divs at 0/15/20%"},
+        {"t":"O","n":"Realty Income (monthly REIT)","p":10,"type":"REIT","cadence":"Monthly","y":5.1,"where":"Roth IRA - REIT distributions = ordinary income"},
+        {"t":"ARCC","n":"Ares Capital (BDC)","p":10,"type":"BDC","cadence":"Quarterly","y":10.3,"where":"Roth IRA - BDC distributions = ordinary income"},
+        {"t":"MAIN","n":"Main Street Capital (BDC)","p":9,"type":"BDC","cadence":"Monthly","y":8.0,"where":"Roth IRA - includes supplemental dividends"},
+        {"t":"STAG","n":"STAG Industrial REIT","p":8,"type":"REIT","cadence":"Monthly","y":4.1,"where":"Roth IRA - REIT shelter"},
+        {"t":"EPR","n":"EPR Properties (entertainment REIT)","p":7,"type":"REIT","cadence":"Monthly","y":7.5,"where":"Roth IRA - higher yield REIT"},
+        {"t":"SPHD","n":"Invesco S&P 500 High Div Low Vol","p":7,"type":"Div ETF","cadence":"Monthly","y":4.7,"where":"Taxable - mostly qualified divs"},
+        {"t":"AGNC","n":"AGNC Investment (mortgage REIT)","p":7,"type":"mREIT","cadence":"Monthly","y":13.3,"where":"Roth IRA - highest yield, highest risk"}
+      ],
+      "wildcard_pool": [
+        {"t":"QYLD","n":"Global X Nasdaq 100 Covered Call","sector":"Cov-Call ETF","kind":"tech","active":true,"y":11.5,"cadence":"Monthly","where":"Roth IRA - ROC distributions","blurb":"Highest-yield Nasdaq covered-call ETF. Lags in bull markets but max monthly income."},
+        {"t":"PFFA","n":"Virtus InfraCap US Preferred ETF","sector":"Leveraged Preferred","kind":"tech","active":true,"y":9.5,"cadence":"Monthly","where":"Roth IRA - leverage = more risk","blurb":"Actively managed leveraged preferred ETF. Higher yield via 30% leverage."},
+        {"t":"DSL","n":"DoubleLine Income Solutions CEF","sector":"Bond CEF","kind":"tech","active":true,"y":10.5,"cadence":"Monthly","where":"Roth IRA - bond income shelter","blurb":"Gundlach-managed multi-sector bond CEF."},
+        {"t":"PDI","n":"PIMCO Dynamic Income Fund","sector":"Bond CEF","kind":"tech","active":false,"y":13.5,"cadence":"Monthly","where":"Roth IRA - max bond yield","blurb":"PIMCO flagship bond CEF. Top credit research; distributions held through cycles."},
+        {"t":"UTG","n":"Reaves Utility Income Fund","sector":"Utility CEF","kind":"alt","active":false,"y":7.5,"cadence":"Monthly","where":"Taxable - utility divs are qualified","blurb":"Pure-play regulated utilities CEF. Conservative leverage."},
+        {"t":"NMZ","n":"Nuveen Muni High Income Opp","sector":"Muni Bond CEF","kind":"alt","active":false,"y":6.0,"cadence":"Monthly","where":"Taxable - TAX-FREE federal income","blurb":"High-yield muni CEF. Federally tax-exempt. TEY ~9-10% for high earners."},
+        {"t":"JPS","n":"Nuveen Preferred & Income (CEF)","sector":"Preferred CEF","kind":"alt","active":false,"y":8.0,"cadence":"Monthly","where":"Roth IRA - preferred income shelter","blurb":"Largest preferred CEF. Modest leverage; often at discount to NAV."},
+        {"t":"UTF","n":"Cohen & Steers Infrastructure","sector":"Infra CEF","kind":"alt","active":false,"y":7.5,"cadence":"Monthly","where":"Roth IRA / Taxable","blurb":"Global infrastructure CEF: utilities, pipelines, telecoms."}
+      ],
+      "tax_accounts": [
+        {"k":"Roth IRA (priority for REITs, BDCs, mREITs)","v":"REIT and BDC distributions are ORDINARY income (no qualified-dividend rate). Sheltering AGNC, O, ARCC, MAIN here saves the most tax.","priority":1},
+        {"k":"Traditional IRA / 401(k)","v":"Same shelter benefit as Roth for ordinary-income distributions. Pay tax later at withdrawal instead of now.","priority":2},
+        {"k":"Covered-call ETFs (JEPI/JEPQ/QYLD) - ROC nuance","v":"Distributions partly Return-of-Capital which REDUCES cost basis and DEFERS tax. Eventually taxable as capital gain on sale.","priority":2},
+        {"k":"Taxable Brokerage","v":"Best for ETFs paying qualified dividends (SCHD, SPHD). Worst for REITs/BDCs - their distributions become ordinary income at your marginal rate.","priority":3},
+        {"k":"Tax-saving tip: Yield-on-cost in Roth","v":"$7K/yr into Roth in REITs/BDCs at ~9% blended = ~$630/yr tax-FREE forever. Compounds enormously over decades.","priority":1}
+      ]
+    }
+  },
+  "Canada": {
+    "growth": {
+      "name": "Canada Max-Growth Portfolio",
+      "currency": "CAD",
+      "symbol": "$",
+      "annual_default": 7000,
+      "return_pct": 8,
+      "base_holdings": [
+        {"t":"VFV","n":"Vanguard S&P 500 (CAD)","p":23,"type":"ETF","where":"RESP / ITF"},
+        {"t":"XEQT","n":"iShares Core Equity Portfolio","p":18,"type":"ETF","where":"RESP / ITF"},
+        {"t":"VDY","n":"Vanguard FTSE Cdn High Div","p":14,"type":"Div ETF","where":"ITF (Cdn div tax credit)"},
+        {"t":"ZQQ","n":"BMO Nasdaq 100 (CAD-Hedged)","p":10,"type":"ETF","where":"ITF"},
+        {"t":"SHOP","n":"Shopify","p":6,"type":"Stock","where":"ITF (cap gains -> child)"},
+        {"t":"RY","n":"Royal Bank of Canada","p":6,"type":"Stock","where":"ITF"},
+        {"t":"ENB","n":"Enbridge","p":6,"type":"Stock","where":"ITF"},
+        {"t":"BAM","n":"Brookfield Asset Mgmt","p":6,"type":"Stock","where":"ITF"},
+        {"t":"CNR","n":"Canadian National Railway","p":6,"type":"Stock","where":"ITF"}
+      ],
+      "wildcard_pool": [
+        {"t":"LSPD","n":"Lightspeed Commerce","sector":"Tech/SMB Software","kind":"tech","active":true,"where":"ITF - SMB software turnaround","blurb":"SMB e-commerce + retail POS. Founder back in CEO seat."},
+        {"t":"CSU","n":"Constellation Software","sector":"Tech/Software","kind":"tech","active":true,"where":"ITF - Tech rollup compounder","blurb":"Serial acquirer of niche vertical software. 20+ year 25% IRR."},
+        {"t":"HUT","n":"Hut 8 Mining","sector":"Tech/Crypto","kind":"tech","active":true,"where":"ITF - BTC/AI compute hybrid","blurb":"BTC miner pivoting to AI compute leasing."},
+        {"t":"OTEX","n":"OpenText","sector":"Tech/Enterprise SW","kind":"tech","active":false,"where":"ITF - Enterprise content + AI","blurb":"Enterprise content / cybersecurity rollup adding AI features."},
+        {"t":"CCO","n":"Cameco","sector":"Uranium/Mining","kind":"alt","active":false,"where":"ITF - Nuclear renaissance","blurb":"World's largest uranium miner. AI power demand + reactor restarts."},
+        {"t":"ATD","n":"Alimentation Couche-Tard","sector":"Consumer/Retail","kind":"alt","active":false,"where":"ITF - Steady compounder","blurb":"Global convenience store consolidator (Circle K). Decades of steady FCF growth."},
+        {"t":"WCN","n":"Waste Connections","sector":"Industrial/Defensive","kind":"alt","active":false,"where":"ITF - Defensive infrastructure","blurb":"Solid-waste rollup. Compounding pricing power + acquisitions."},
+        {"t":"DOO","n":"BRP Inc","sector":"Consumer/Recreation","kind":"alt","active":false,"where":"ITF - Powersports recovery","blurb":"Ski-Doo, Sea-Doo, Can-Am maker. Cyclical consumer discretionary."}
+      ],
+      "tax_accounts": [
+        {"k":"RESP (until 18)","v":"Gov't matches 20% up to $500/yr (CESG). Tax-deferred. Best for first $2,500/yr.","priority":1},
+        {"k":"In-Trust-For (ITF)","v":"Held by parent for child. Capital gains attribute to child (favorable low bracket).","priority":2},
+        {"k":"TFSA (at 18)","v":"Tax-free growth + withdrawals forever. $7,000/yr (2025). Roll holdings here at 18.","priority":1},
+        {"k":"FHSA (at 18, if home goal)","v":"Tax-deductible contributions + tax-free withdrawals for first home. $8,000/yr.","priority":3}
+      ]
+    },
+    "income": {
+      "name": "Canada Monthly Income Portfolio",
+      "currency": "CAD",
+      "symbol": "$",
+      "annual_default": 10000,
+      "return_pct": 6,
+      "base_holdings": [
+        {"t":"ENB","n":"Enbridge (pipeline dividend king)","p":15,"type":"Pipeline","cadence":"Quarterly","y":6.0,"where":"TFSA - Cdn divs, tax-free growth"},
+        {"t":"VDY","n":"Vanguard FTSE Cdn High Div ETF","p":13,"type":"Div ETF","cadence":"Quarterly","y":4.5,"where":"TFSA - core Cdn dividend exposure"},
+        {"t":"PPL","n":"Pembina Pipeline","p":12,"type":"Pipeline","cadence":"Monthly","y":5.5,"where":"TFSA - monthly Cdn divs"},
+        {"t":"ZWC","n":"BMO Cdn High Div Covered Call ETF","p":11,"type":"Cov-Call ETF","cadence":"Monthly","y":7.5,"where":"TFSA - covered-call income"},
+        {"t":"REI.UN","n":"RioCan REIT","p":10,"type":"REIT","cadence":"Monthly","y":5.5,"where":"TFSA - REIT distributions sheltered"},
+        {"t":"DIR.UN","n":"Dream Industrial REIT","p":9,"type":"REIT","cadence":"Monthly","y":5.0,"where":"TFSA / Non-reg"},
+        {"t":"GRT.UN","n":"Granite REIT (industrial logistics)","p":8,"type":"REIT","cadence":"Monthly","y":4.2,"where":"TFSA"},
+        {"t":"EIF","n":"Exchange Income Corp","p":7,"type":"Industrial","cadence":"Monthly","y":5.2,"where":"TFSA - long monthly streak"},
+        {"t":"BIP.UN","n":"Brookfield Infrastructure Partners","p":5,"type":"Infra","cadence":"Quarterly","y":5.8,"where":"TFSA / RRSP (LP - check W-8BEN)"},
+        {"t":"FTS","n":"Fortis (50+ yr div growth)","p":5,"type":"Utility","cadence":"Quarterly","y":4.2,"where":"TFSA"}
+      ],
+      "wildcard_pool": [
+        {"t":"BCE","n":"BCE Inc (telecom)","sector":"Telecom/High Yield","kind":"tech","active":true,"y":6.5,"cadence":"Quarterly","where":"TFSA - Cdn div tax credit waived in TFSA","blurb":"Telecom dividend giant. ~6.5% yield. Stable cash flows from wireless + media."},
+        {"t":"BNS","n":"Bank of Nova Scotia","sector":"Bank/Highest Yield","kind":"tech","active":true,"y":5.5,"cadence":"Quarterly","where":"TFSA - safest big-bank yield","blurb":"Highest-yielding Big-5 Cdn bank. Latin America + Caribbean diversification."},
+        {"t":"TRP","n":"TC Energy (pipelines)","sector":"Pipeline/Energy","kind":"tech","active":true,"y":6.5,"cadence":"Quarterly","where":"TFSA - Cdn energy infra","blurb":"Pipelines + power gen. 24+ years of dividend growth."},
+        {"t":"T","n":"Telus Corporation","sector":"Telecom","kind":"tech","active":false,"y":6.0,"cadence":"Quarterly","where":"TFSA - telecom income alt","blurb":"Canada's second-largest telecom. Health-tech and ag-tech side bets."},
+        {"t":"AQN","n":"Algonquin Power","sector":"Renewables/Utility","kind":"alt","active":false,"y":5.5,"cadence":"Quarterly","where":"TFSA / RRSP","blurb":"Regulated utility + renewable power. Recovering from 2023 cut."},
+        {"t":"NPI","n":"Northland Power","sector":"Renewables","kind":"alt","active":false,"y":5.0,"cadence":"Monthly","where":"TFSA - renewables monthly","blurb":"Offshore wind + global renewables. Monthly distributions."},
+        {"t":"CHE.UN","n":"Chemtrade Logistics","sector":"Specialty Chemicals","kind":"alt","active":false,"y":6.0,"cadence":"Monthly","where":"TFSA - cyclical income","blurb":"Industrial chemicals. Cyclical but high payout. Volatile yields."},
+        {"t":"BPYP.PR","n":"Brookfield Property Preferred","sector":"REIT Preferred","kind":"alt","active":false,"y":7.0,"cadence":"Quarterly","where":"TFSA - preferred shares","blurb":"BAM-backed property preferred shares. Fixed-rate dividend, less rate-sensitive."}
+      ],
+      "tax_accounts": [
+        {"k":"TFSA (priority for Cdn dividends + REITs)","v":"Cdn dividends + REIT distributions grow TAX-FREE in TFSA. No dividend tax credit needed (already 0% tax). Best long-term shelter.","priority":1},
+        {"k":"RRSP (for US-listed dividend payers)","v":"US-Canada treaty: NO 15% US withholding tax on US dividend payers held in RRSP. Saves 15% on US dividend income.","priority":1},
+        {"k":"Non-registered Brokerage (Cdn div tax credit)","v":"Cdn eligible dividends get the dividend tax credit - effective rate ~25-35% (vs ~50% on interest). REIT distributions are still ordinary income.","priority":2},
+        {"k":"AVOID: US stocks in TFSA","v":"TFSA does NOT get treaty protection - 15% US withholding tax applies. Hold US monthly payers (O, ARCC, JEPI) in RRSP instead.","priority":3},
+        {"k":"Tax-saving tip: Pension Income Credit (over 65)","v":"After 65, first $2,000/yr of certain dividend income qualifies for the pension income credit ($300+ tax savings/yr).","priority":2}
+      ]
+    }
+  },
+  "India": {
+    "growth": {
+      "name": "India - Global Max-Growth Portfolio",
+      "currency": "INR",
+      "symbol": "INR ",
+      "annual_default": 600000,
+      "return_pct": 10,
+      "base_holdings": [
+        {"t":"VOO","n":"Vanguard S&P 500 ETF","p":23,"type":"US ETF","where":"LRS via INDmoney/Vested"},
+        {"t":"QQQM","n":"Invesco Nasdaq 100 ETF","p":18,"type":"US ETF","where":"LRS via INDmoney/Vested"},
+        {"t":"SCHD","n":"Schwab US Dividend Equity ETF","p":14,"type":"US Div ETF","where":"LRS via INDmoney/Vested"},
+        {"t":"MON100","n":"Motilal Oswal Nasdaq 100 ETF","p":10,"type":"INR ETF","where":"Indian Demat - no LRS"},
+        {"t":"NVDA","n":"NVIDIA","p":6,"type":"US Stock","where":"LRS - fractional shares"},
+        {"t":"MSFT","n":"Microsoft","p":6,"type":"US Stock","where":"LRS - fractional shares"},
+        {"t":"AAPL","n":"Apple","p":6,"type":"US Stock","where":"LRS - fractional shares"},
+        {"t":"GOOGL","n":"Alphabet (Google)","p":6,"type":"US Stock","where":"LRS - fractional shares"},
+        {"t":"AMZN","n":"Amazon","p":6,"type":"US Stock","where":"LRS - fractional shares"}
+      ],
+      "wildcard_pool": [
+        {"t":"MU","n":"Micron Technology","sector":"Tech/AI Memory","kind":"tech","active":true,"where":"LRS - AI/HBM memory cycle","blurb":"AI-driven HBM/DRAM cycle. Memory pricing tightening through 2027."},
+        {"t":"SNDK","n":"SanDisk Corp","sector":"Tech/AI Storage","kind":"tech","active":true,"where":"LRS - AI flash storage","blurb":"WDC flash spinoff. AI-storage tailwind."},
+        {"t":"PLTR","n":"Palantir Technologies","sector":"AI/Software","kind":"tech","active":true,"where":"LRS - AI/govt platform","blurb":"AIP revenue compounding 40%+ YoY."},
+        {"t":"ARM","n":"Arm Holdings","sector":"Tech/Chip IP","kind":"tech","active":false,"where":"LRS - Chip IP royalties","blurb":"Chip IP licensor for AI/mobile/server CPUs."},
+        {"t":"TLN","n":"Talen Energy","sector":"Nuclear/Utility","kind":"alt","active":false,"where":"LRS - Nuclear power for AI","blurb":"Nuclear utility powering AI data centers (AWS deal)."},
+        {"t":"VKTX","n":"Viking Therapeutics","sector":"Biotech/GLP-1","kind":"alt","active":false,"where":"LRS - Biotech moonshot","blurb":"Phase 2/3 GLP-1 obesity drug. Binary outcome."},
+        {"t":"SOFI","n":"SoFi Technologies","sector":"Fintech/Banking","kind":"alt","active":false,"where":"LRS - Digital bank rollup","blurb":"Full bank charter + lending + brokerage."},
+        {"t":"CAVA","n":"Cava Group","sector":"Consumer/Restaurant","kind":"alt","active":false,"where":"LRS - 'Next Chipotle' thesis","blurb":"Mediterranean fast-casual. Strong unit economics."}
+      ],
+      "tax_accounts": [
+        {"k":"INDmoney (best overall)","v":"Free US stock account. Fractional shares from $1. Built-in INR-USD conversion + LRS tracking.","priority":1},
+        {"k":"Vested Finance","v":"DriveWealth-backed. Fractional shares. Curated Vests (theme baskets). $50 min.","priority":2},
+        {"k":"Interactive Brokers India","v":"Direct global market access. Lowest commissions at scale. Best for portfolios INR 25L+.","priority":2},
+        {"k":"LRS Limit + TCS","v":"USD 250,000/yr per person. 20% TCS above INR 7L is CREDITABLE against final tax.","priority":1},
+        {"k":"Tax on US Stocks","v":"US dividends: 25% TDS (DTAA) - creditable. LTCG (>24mo): 20% with indexation.","priority":2}
+      ]
+    },
+    "income": {
+      "name": "India - Hybrid Income Portfolio",
+      "currency": "INR",
+      "symbol": "INR ",
+      "annual_default": 600000,
+      "return_pct": 8,
+      "base_holdings": [
+        {"t":"JEPQ-LRS","n":"JPMorgan Nasdaq Equity Premium Income","p":12,"type":"Cov-Call ETF","cadence":"Monthly","y":9.5,"where":"LRS via INDmoney - 25% TDS creditable"},
+        {"t":"JEPI-LRS","n":"JPMorgan Equity Premium Income","p":10,"type":"Cov-Call ETF","cadence":"Monthly","y":7.2,"where":"LRS via INDmoney - 25% TDS creditable"},
+        {"t":"O-LRS","n":"Realty Income (US monthly REIT)","p":10,"type":"US REIT","cadence":"Monthly","y":5.1,"where":"LRS - 25% TDS, taxable in India"},
+        {"t":"EMBASSY","n":"Embassy Office Parks REIT","p":12,"type":"Indian REIT","cadence":"Semi-Annual","y":6.5,"where":"Demat - REIT distributions partly tax-exempt"},
+        {"t":"POWERGRIDINVIT","n":"PowerGrid InvIT","p":11,"type":"InvIT","cadence":"Semi-Annual","y":9.0,"where":"Demat - InvIT distributions partly tax-exempt"},
+        {"t":"INDIGRID","n":"India Grid Trust (InvIT)","p":10,"type":"InvIT","cadence":"Semi-Annual","y":9.0,"where":"Demat - InvIT (high yield)"},
+        {"t":"SCHD-LRS","n":"Schwab US Dividend Equity ETF","p":9,"type":"US Div ETF","cadence":"Quarterly","y":3.5,"where":"LRS - quality dividend growth"},
+        {"t":"COALINDIA","n":"Coal India (high div yield)","p":8,"type":"Indian Stock","cadence":"Semi-Annual","y":6.0,"where":"Demat - special dividends common"},
+        {"t":"ITC","n":"ITC Ltd (consumer + tobacco)","p":7,"type":"Indian Stock","cadence":"Annual","y":3.5,"where":"Demat - steady annual dividends"},
+        {"t":"NIPPONDIV","n":"Nippon India Dividend Yield ETF","p":6,"type":"INR Div ETF","cadence":"Annual","y":4.0,"where":"Demat - INR dividend basket"}
+      ],
+      "wildcard_pool": [
+        {"t":"ARCC-LRS","n":"Ares Capital (US BDC)","sector":"US BDC","kind":"tech","active":true,"y":10.3,"cadence":"Quarterly","where":"LRS - high yield, 25% TDS creditable","blurb":"Largest US BDC. ~10% yield. 25% US dividend withholding is creditable against Indian tax."},
+        {"t":"MAIN-LRS","n":"Main Street Capital (BDC)","sector":"US BDC","kind":"tech","active":true,"y":8.0,"cadence":"Monthly","where":"LRS - includes monthly supplementals","blurb":"Monthly BDC distributions + supplemental dividends. Internally managed quality."},
+        {"t":"AGNC-LRS","n":"AGNC Investment (mREIT)","sector":"US mREIT","kind":"tech","active":true,"y":13.3,"cadence":"Monthly","where":"LRS - highest yield, highest risk","blurb":"13%+ yield but rate-sensitive. Volatile NAV; income stream stable."},
+        {"t":"QYLD-LRS","n":"Global X Nasdaq 100 Covered Call","sector":"US Cov-Call ETF","kind":"tech","active":false,"y":11.5,"cadence":"Monthly","where":"LRS - ROC reduces TDS impact","blurb":"Maximum covered-call yield. ROC portion reduces effective TDS on distributions."},
+        {"t":"MINDSPACE","n":"Mindspace Business Parks REIT","sector":"Indian REIT","kind":"alt","active":false,"y":6.0,"cadence":"Semi-Annual","where":"Demat - office REIT","blurb":"Indian office REIT. Distributions partly tax-exempt."},
+        {"t":"BIRET","n":"Brookfield India REIT","sector":"Indian REIT","kind":"alt","active":false,"y":6.5,"cadence":"Semi-Annual","where":"Demat - office REIT","blurb":"Brookfield-managed Indian office REIT. Strong tenant quality."},
+        {"t":"NEXUS","n":"Nexus Select Trust (retail REIT)","sector":"Indian REIT","kind":"alt","active":false,"y":7.0,"cadence":"Semi-Annual","where":"Demat - retail mall REIT","blurb":"First Indian retail-focused REIT. Mall consumption tailwind."},
+        {"t":"ONGC","n":"Oil & Natural Gas Corp","sector":"Energy/PSU","kind":"alt","active":false,"y":5.5,"cadence":"Semi-Annual","where":"Demat - PSU oil major","blurb":"Indian state-owned oil giant. Cyclical but high dividend payout policy."}
+      ],
+      "tax_accounts": [
+        {"k":"Indian Demat (for Indian REITs/InvITs)","v":"REIT/InvIT distributions are taxed in 3 buckets: interest (slab rate), dividend (slab rate), and capital return (cost-basis reduction). Read the distribution composition annually.","priority":1},
+        {"k":"LRS via INDmoney (for US monthly payers)","v":"25% US TDS withheld on dividends (DTAA rate). Creditable against Indian tax (Form 67). LRS limit USD 250K/yr per person; 20% TCS above INR 7L is creditable.","priority":1},
+        {"k":"US REIT/BDC tax (warning)","v":"US REITs/BDCs distribute ORDINARY income for US tax purposes - DTAA limits withholding to 25% but it still hurts vs 15% for qualified dividends.","priority":2},
+        {"k":"InvIT tax efficiency","v":"PowerGrid InvIT and IndiGrid distributions are LARGELY tax-exempt (interest portion taxable, dividend portion exempt, capital return reduces basis). Most tax-efficient income vehicle.","priority":1},
+        {"k":"Avoid: Holding US dividend stocks in minor demat","v":"Minor demat accounts attribute US dividend income to parent under Sec 64. Plan for income to transfer back to child at 18 with capital base intact.","priority":3},
+        {"k":"ELSS (limited fit for income)","v":"ELSS is growth-focused (3-yr lock-in). NOT suitable for income portfolios. Use only for Sec 80C deduction, separate from this allocation.","priority":3}
+      ]
+    }
+  }
+}
